@@ -7,7 +7,8 @@ class DiningVisualizer:
     def __init__(self, dining_table):
         self.dining_table = dining_table
         self.num_philosophers = dining_table.num_philosophers
-        self.states = np.zeros(self.num_philosophers)
+        self.fork_states = np.zeros(self.num_philosophers)
+        self.philosopher_states = np.zeros(self.num_philosophers)
         self.fig, self.ax = plt.subplots()
         self.ax.set_xlim([0, self.num_philosophers])
         self.ax.set_ylim([0, 2])
@@ -16,15 +17,40 @@ class DiningVisualizer:
         self.ax.set_yticks([])
         self.ax.set_title("Dining Philosophers")
         self.ax.set_aspect("equal")
-        self.line, = self.ax.plot(range(self.num_philosophers), self.states, "ro")
+        self.fork_lines = []
+        self.philosopher_dots = []
+
+        fork_colors = ["#22212C", "#454158", "#9580FF", "#22212C", "#454158"]
+        philosopher_colors = ["#FFFFFF", "#8AFF80", "#FF5555"]
+
+        for i in range(self.num_philosophers):
+            fork_line, = self.ax.plot([i, i], [0, 1], color=fork_colors[i % len(fork_colors)], linewidth=2)
+            philosopher_dot, = self.ax.plot([i], [1.2], ".", markersize=12, color=philosopher_colors[i % len(philosopher_colors)])
+            self.fork_lines.append(fork_line)
+            self.philosopher_dots.append(philosopher_dot)
+
         self.fig.canvas.draw()
 
     def update(self):
-        self.states = np.zeros(self.num_philosophers)
+        for i, fork in enumerate(self.dining_table.forks):
+            if fork.locked():
+                self.fork_states[i] = 1
+            else:
+                self.fork_states[i] = 0
+
         for i, philosopher in enumerate(self.dining_table.philosophers):
             if philosopher.left_fork.locked() and philosopher.right_fork.locked():
-                self.states[i] = 1
-        self.line.set_ydata(self.states)
+                self.philosopher_states[i] = 1
+            else:
+                self.philosopher_states[i] = 0
+
+        for i, line in enumerate(self.fork_lines):
+            line.set_ydata([self.fork_states[i], self.fork_states[i] + 1])
+
+        for i, dot in enumerate(self.philosopher_dots):
+            dot.set_xdata([i])
+            dot.set_ydata([self.philosopher_states[i] + 1.2])
+
         self.fig.canvas.draw()
 
     def visualize(self):
